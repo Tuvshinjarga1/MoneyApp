@@ -72,6 +72,10 @@ class _MainPageState extends State<MainPage> {
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.money),
+            label: 'UpcomingTransactions',
+          ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
