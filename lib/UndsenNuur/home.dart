@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:money/UndsenNuur/user_home/profilePage.dart';
+import 'package:money/UndsenNuur/user_home/upcomingTransaction.dart';
 
 class MoneyControlApp extends StatelessWidget {
   final String userId;
@@ -41,7 +43,9 @@ class _MainPageState extends State<MainPage> {
     _widgetOptions = <Widget>[
       HomePage(userId: userId),
       TransactionsPage(),
-      ProfilePage(userId: userId), // Pass userId here
+      // Pass userId here
+      TransactionPage(),
+      ProfilePage(userId: userId),
     ];
   }
 
@@ -69,12 +73,12 @@ class _MainPageState extends State<MainPage> {
             label: 'Transactions',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.money),
             label: 'UpcomingTransactions',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
         currentIndex: _selectedIndex,
@@ -111,8 +115,11 @@ class _HomePageState extends State<HomePage> {
           ),
           SizedBox(height: 8),
           StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('transactions').snapshots(),
-            builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+            stream: FirebaseFirestore.instance
+                .collection('transactions')
+                .snapshots(),
+            builder:
+                (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
               if (snapshot.hasError) {
                 return Text('Error: ${snapshot.error}');
               }
@@ -124,13 +131,17 @@ class _HomePageState extends State<HomePage> {
               double totalBalance = 0;
 
               snapshot.data!.docs.forEach((DocumentSnapshot document) {
-                Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                Map<String, dynamic> data =
+                    document.data() as Map<String, dynamic>;
                 totalBalance += data['amount'];
               });
 
               return Text(
                 '\$$totalBalance',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: totalBalance >= 0 ? Colors.green : Colors.red),
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: totalBalance >= 0 ? Colors.green : Colors.red),
               );
             },
           ),
@@ -142,8 +153,11 @@ class _HomePageState extends State<HomePage> {
           SizedBox(height: 8),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('transactions').snapshots(),
-              builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+              stream: FirebaseFirestore.instance
+                  .collection('transactions')
+                  .snapshots(),
+              builder: (BuildContext context,
+                  AsyncSnapshot<QuerySnapshot> snapshot) {
                 if (snapshot.hasError) {
                   return Text('Error: ${snapshot.error}');
                 }
@@ -153,18 +167,29 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 return ListView(
-                  children: snapshot.data!.docs.map((DocumentSnapshot document) {
-                    Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+                  children:
+                      snapshot.data!.docs.map((DocumentSnapshot document) {
+                    Map<String, dynamic> data =
+                        document.data() as Map<String, dynamic>;
                     return ListTile(
                       leading: Icon(
-                        data['type'] == 'income' ? Icons.arrow_upward : Icons.arrow_downward,
-                        color: data['type'] == 'income' ? Colors.green : Colors.red,
+                        data['type'] == 'income'
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                        color: data['type'] == 'income'
+                            ? Colors.green
+                            : Colors.red,
                       ),
                       title: Text(data['description'] ?? ''),
-                      subtitle: Text(data['timestamp'] != null ? data['timestamp'].toDate().toString() : ''),
+                      subtitle: Text(data['timestamp'] != null
+                          ? data['timestamp'].toDate().toString()
+                          : ''),
                       trailing: Text(
                         '${data['type'] == 'income' ? '+' : '-'} \$${data['amount'].toStringAsFixed(2)}',
-                        style: TextStyle(color: data['type'] == 'income' ? Colors.green : Colors.red),
+                        style: TextStyle(
+                            color: data['type'] == 'income'
+                                ? Colors.green
+                                : Colors.red),
                       ),
                     );
                   }).toList(),
@@ -183,10 +208,12 @@ class _HomePageState extends State<HomePage> {
                     _transactionType = newValue!;
                   });
                 },
-                items: <String>['income', 'expenditure'].map<DropdownMenuItem<String>>((String value) {
+                items: <String>['income', 'expenditure']
+                    .map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
-                    child: Text(value == 'income' ? 'Add Income' : 'Add Expenditure'),
+                    child: Text(
+                        value == 'income' ? 'Add Income' : 'Add Expenditure'),
                   );
                 }).toList(),
               ),
@@ -222,7 +249,8 @@ class _HomePageState extends State<HomePage> {
     }
 
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    final CollectionReference transactions = _firestore.collection('transactions');
+    final CollectionReference transactions =
+        _firestore.collection('transactions');
 
     double amount = double.parse(_amountController.text);
     await transactions.add({
@@ -246,9 +274,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-
-
-
 class TransactionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -257,46 +282,6 @@ class TransactionsPage extends StatelessWidget {
         'Transactions Page',
         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
-    );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  final String userId;
-
-  ProfilePage({required this.userId});
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('User').doc(userId).get(),
-      builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator(); // Show loading indicator while fetching data
-        }
-        if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
-        }
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return Text('User not found'); // Handle case where user data is not available
-        }
-        var userData = snapshot.data!.data() as Map<String, dynamic>; // Get user data
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Profile Page',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 20),
-              Text('Name: ${userData['Овог']} ${userData['Нэр']}'),
-              Text('Утас: ${userData['Утас']}'),
-              // Add more user information here
-            ],
-          ),
-        );
-      },
     );
   }
 }
